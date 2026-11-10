@@ -5,6 +5,6 @@
   "description": "Asistente gamer: compatibilidad de PC y chat especializado en videojuegos",
   "main": "server.js",
   "scripts": {"start": "node server.js"},
-  "engines": {"node": ">=20"},
+  "engines": {"node": "22.x"},
   "dependencies": {"express": "^4.21.2"}
 }

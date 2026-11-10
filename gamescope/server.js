@@ -42,16 +42,27 @@ async function askGemini(contents, systemInstruction = gameOnlyInstruction) {
     throw error;
   }
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemInstruction }] },
-      contents,
-      // Los modelos con "thinking" gastan parte de este límite pensando, por eso es generoso.
-      generationConfig: { temperature: 0.65, maxOutputTokens: 3000 }
-    })
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(60000),
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemInstruction }] },
+        contents,
+        // Los modelos con "thinking" gastan parte de este límite pensando, por eso es generoso.
+        generationConfig: { temperature: 0.65, maxOutputTokens: 3000 }
+      })
+    });
+  } catch (e) {
+    // "fetch failed" no dice nada útil; la causa real viene en e.cause (DNS, timeout, TLS...).
+    const cause = e.cause?.code || e.cause?.message || e.name || e.message;
+    console.error("Gemini fetch error:", cause, e.cause || e);
+    const err = new Error(`No se pudo conectar con Gemini (${cause}).`);
+    err.status = 502;
+    throw err;
+  }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const err = new Error(data?.error?.message || "Gemini no pudo procesar la solicitud.");
