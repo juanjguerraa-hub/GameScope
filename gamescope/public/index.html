@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#090b12">
+  <meta name="theme-color" content="#040a18">
   <meta name="description" content="GameScope: descubre qué puedes jugar en tu PC y conversa sobre videojuegos.">
   <title>GameScope — Tu universo gamer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,13 +13,14 @@
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+
   <header class="topbar">
     <a class="brand" href="#" aria-label="GameScope inicio"><span class="brand-mark">G</span><span>GAME<span class="brand-accent">SCOPE</span><small>YOUR GAMING UNIVERSE</small></span></a>
     <nav class="nav">
       <button class="nav-link active" data-view="checker"><span>⌘</span> Game Checker</button>
       <button class="nav-link" data-view="chat"><span>✳</span> Game Chat</button>
     </nav>
-    <div class="top-right"><span class="status-dot"></span><span>GEMINI AI</span><div class="avatar">GS</div></div>
+    <div class="top-right"><span class="status-dot"></span><span>GEMINI AI</span></div>
   </header>
 
   <main>
@@ -27,14 +28,19 @@
       <div class="hero-copy">
         <div class="eyebrow"><span class="spark">✦</span> TU ASISTENTE GAMER INTELIGENTE</div>
         <h1>Tu PC. Tus juegos.<br><span>Sin límites.</span></h1>
-        <p>Descubre qué puedes jugar, optimiza tu experiencia y resuelve todas tus dudas del universo gamer.</p>
+        <p>Descubre si tu equipo puede con ese juego que quieres, mejora tus ajustes y resuelve todas tus dudas sobre indies, metroidvanias, juegos de pelea y los grandes del momento.</p>
         <div class="hero-actions"><button class="primary-btn" data-jump="checker">Analizar mi PC <span>↗</span></button><button class="secondary-btn" data-jump="chat">Hablar con Game Chat</button></div>
       </div>
-      <div class="hero-art"><div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="hero-core"><span>G</span></div><div class="float-tag tag-top">✦ AI POWERED</div><div class="float-tag tag-bottom"><i></i> READY TO PLAY</div><div class="hero-cross">＋</div></div>
+      <div class="hero-art">
+        <div class="hero-glow"></div>
+        <div class="hero-covers" id="hero-covers"></div>
+        <div class="float-tag tag-top">✦ AI POWERED</div>
+        <div class="float-tag tag-bottom"><i></i> READY TO PLAY</div>
+      </div>
     </section>
 
     <section class="view active" id="checker-view">
-      <div class="section-heading"><div><div class="eyebrow">01 / COMPATIBILIDAD</div><h2>Game <span>Checker</span></h2><p>Cuéntanos qué tiene tu PC y qué quieres jugar. Nosotros hacemos el análisis.</p></div><div class="section-icon">⌘</div></div>
+      <div class="section-heading"><div><div class="eyebrow">01 / COMPATIBILIDAD</div><h2>Game <span>Checker</span></h2><p>Cuéntanos qué tiene tu PC y qué quieres jugar. Te decimos si puedes jugarlo, con qué ajustes o si mejor buscas otra opción.</p></div><div class="section-icon">⌘</div></div>
       <div class="checker-layout">
         <form class="panel hardware-panel" id="analyze-form">
           <div class="panel-title"><div class="panel-icon">▣</div><div><h3>Tu equipo</h3><p>Ingresa los componentes de tu PC</p></div><span class="step-label">PASO 01</span></div>
@@ -42,36 +48,56 @@
           <label>TARJETA GRÁFICA (GPU)<input name="gpu" required placeholder="Ej. NVIDIA RTX 3060 12GB"></label>
           <div class="field-row"><label>MEMORIA RAM (GB)<input name="ram" type="number" min="1" max="512" required placeholder="16"></label><label>RESOLUCIÓN<select name="resolution"><option>1920×1080 (Full HD)</option><option>2560×1440 (QHD)</option><option>3840×2160 (4K)</option><option>No lo sé</option></select></label></div>
           <div class="divider"></div>
-          <div class="panel-title compact"><div class="panel-icon purple">✧</div><div><h3>¿Qué quieres jugar?</h3><p>Elige uno del catálogo o escribe su nombre</p></div><span class="step-label">PASO 02</span></div>
+          <div class="panel-title compact"><div class="panel-icon sky">✧</div><div><h3>¿Qué quieres jugar?</h3><p>Elige uno del catálogo o escribe su nombre</p></div><span class="step-label">PASO 02</span></div>
           <label>VIDEOJUEGO<input id="game-input" name="game" required placeholder="Ej. Mortal Kombat 1"></label>
           <div class="game-chips" id="game-chips">
-            <button type="button" class="game-chip" data-game="Cuphead">Cuphead</button><button type="button" class="game-chip" data-game="Hollow Knight">Hollow Knight</button><button type="button" class="game-chip" data-game="Mortal Kombat 1">Mortal Kombat 1</button><button type="button" class="game-chip" data-game="Minecraft">Minecraft</button>
+            <button type="button" class="game-chip" data-game="Hollow Knight">Hollow Knight</button><button type="button" class="game-chip" data-game="Mortal Kombat 1">Mortal Kombat 1</button><button type="button" class="game-chip" data-game="Valorant">Valorant</button><button type="button" class="game-chip" data-game="Fortnite">Fortnite</button><button type="button" class="game-chip" data-game="Halo Infinite">Halo Infinite</button><button type="button" class="game-chip" data-game="Minecraft">Minecraft</button>
           </div>
           <label>OBJETIVO<select name="target"><option>Equilibrado (calidad y fluidez)</option><option>Máximos FPS competitivos</option><option>Mejor calidad gráfica</option></select></label>
           <button class="primary-btn full" type="submit" id="analyze-btn">Analizar compatibilidad <span>✦</span></button>
           <p class="privacy-note">✧ Tus componentes solo se usan para generar este análisis.</p>
         </form>
+
         <div class="panel result-panel" id="result-panel">
           <div class="empty-state" id="empty-state"><div class="empty-orb">◈</div><h3>Tu diagnóstico te espera</h3><p>Completa los datos de tu PC y selecciona un juego para descubrir cómo funcionará.</p><div class="empty-lines"><span></span><span></span><span></span></div><div class="mini-stats"><div><b>CPU</b><small>EN ESPERA</small></div><div><b>GPU</b><small>EN ESPERA</small></div><div><b>RAM</b><small>EN ESPERA</small></div></div></div>
-          <div id="result-content" class="result-content hidden"><div class="result-top"><span class="eyebrow">ANÁLISIS GAMESCOPE</span><button class="copy-btn" id="copy-result">Copiar</button></div><div id="result-text" class="markdown-output"></div></div>
+          <div id="result-content" class="result-content hidden">
+            <div class="result-top"><span class="eyebrow">ANÁLISIS GAMESCOPE</span><button class="copy-btn" id="copy-result">Copiar</button></div>
+            <div class="result-game" id="result-game">
+              <div class="result-cover" id="result-cover"></div>
+              <div class="result-meta"><h3 id="result-title"></h3><small id="result-specs"></small><span class="verdict hidden" id="result-verdict"></span></div>
+            </div>
+            <div id="result-text" class="markdown-output"></div>
+          </div>
         </div>
       </div>
-      <div class="catalog-head"><div><div class="eyebrow">DESCUBRE TU PRÓXIMA AVENTURA</div><h2>Juegos destacados</h2></div><span class="catalog-note">SELECCIONA PARA ANALIZAR ↗</span></div>
+
+      <div class="catalog-head">
+        <div><div class="eyebrow">DESCUBRE TU PRÓXIMA AVENTURA</div><h2>Juegos destacados</h2></div>
+        <span class="catalog-note">SELECCIONA UNO PARA ANALIZARLO ↗</span>
+      </div>
+      <div class="cat-tabs" id="cat-tabs">
+        <button class="cat-tab active" data-cat="all">Todos</button>
+        <button class="cat-tab" data-cat="popular">Populares</button>
+        <button class="cat-tab" data-cat="indie">Indie</button>
+        <button class="cat-tab" data-cat="metroidvania">Metroidvania</button>
+        <button class="cat-tab" data-cat="lucha">Lucha</button>
+      </div>
       <div class="game-grid" id="game-grid"></div>
     </section>
 
     <section class="view" id="chat-view">
-      <div class="section-heading"><div><div class="eyebrow">02 / TU EXPERTO GAMER</div><h2>Game <span>Chat</span></h2><p>Pregunta lo que quieras sobre videojuegos. Estamos en tu equipo.</p></div><div class="section-icon">✳</div></div>
+      <div class="section-heading"><div><div class="eyebrow">02 / TU EXPERTO GAMER</div><h2>Game <span>Chat</span></h2><p>Pregunta lo que quieras sobre videojuegos. Solo hablamos de juegos, ese es nuestro mundo.</p></div><div class="section-icon">✳</div></div>
       <div class="chat-shell panel">
-        <aside class="chat-aside"><div class="bot-avatar">G<span>✦</span></div><h3>GameScope AI</h3><div class="online"><i></i> En línea</div><p>Tu compañero para explorar, aprender y dominar tus videojuegos favoritos.</p><div class="aside-rule"></div><small>ESPECIALIDADES</small><div class="specialty">⚔️ Juegos de lucha</div><div class="specialty">🗺️ Indie & Metroidvania</div><div class="specialty">🎮 Gaming en general</div><div class="aside-tip">✦ <span>Solo hablamos de videojuegos. ¡Ese es nuestro mundo!</span></div></aside>
+        <aside class="chat-aside"><div class="bot-avatar">G<span>✦</span></div><h3>GameScope AI</h3><div class="online"><i></i> En línea</div><p>Tu compañero para explorar, aprender y dominar tus videojuegos favoritos.</p><div class="aside-rule"></div><small>ESPECIALIDADES</small><div class="specialty">🗺️ Indie</div><div class="specialty">🦋 Metroidvania</div><div class="specialty">⚔️ Juegos de pelea</div><div class="specialty">🔥 Los más populares</div><div class="aside-tip">✦ <span>Si no es de videojuegos, no puedo responderlo.</span></div></aside>
         <div class="chat-main"><div class="chat-toolbar"><div><b>Conversación</b><small>Pregúntame sobre tu próximo juego</small></div><button id="clear-chat" class="clear-btn">＋ Nuevo chat</button></div>
-          <div class="messages" id="messages"><div class="message bot"><div class="message-avatar">G</div><div><div class="bubble">¡Hey, gamer! 👾 Soy GameScope. Puedo ayudarte con personajes, historias, estrategias, requisitos, configuraciones y recomendaciones. ¿Qué tienes en mente?</div><small>GAMESCOPE AI · AHORA</small></div></div></div>
-          <div class="suggestions"><button>¿Qué metroidvania me recomiendas?</button><button>¿Cuál es el mejor Mortal Kombat?</button><button>Consejos para mejorar mis FPS</button></div>
+          <div class="messages" id="messages"><div class="message bot"><div class="message-avatar">G</div><div><div class="bubble">¡Hey, gamer! 👾 Soy GameScope. Puedo ayudarte con personajes, historias, combos, estrategias, requisitos y recomendaciones de indies, metroidvanias, juegos de pelea y los títulos más populares. ¿Qué tienes en mente?</div><small>GAMESCOPE AI</small></div></div></div>
+          <div class="suggestions"><button>¿Qué metroidvania me recomiendas?</button><button>¿Cuál es el mejor Mortal Kombat?</button><button>Consejos para mejorar mis FPS en Valorant</button></div>
           <form id="chat-form" class="chat-input"><textarea id="chat-input" rows="1" placeholder="Escribe tu pregunta sobre videojuegos..." required></textarea><button type="submit" id="send-btn" aria-label="Enviar">➤</button></form><div class="chat-disclaimer">GameScope puede equivocarse. Verifica datos técnicos importantes.</div>
         </div>
       </div>
     </section>
   </main>
+
   <footer><a class="brand footer-brand" href="#"><span class="brand-mark">G</span><span>GAME<span class="brand-accent">SCOPE</span><small>YOUR GAMING UNIVERSE</small></span></a><span>HECHO PARA GAMERS, POR GAMERS. <b>✦</b></span><span>© 2026 GAMESCOPE</span></footer>
   <div class="toast" id="toast"></div>
   <script src="/app.js"></script>
