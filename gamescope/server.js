@@ -159,4 +159,32 @@ app.get("/api/cover", async (req, res) => {
 app.get("/api/health", (_req, res) => res.json({ ok: true, app: "GameScope" }));
 app.get("*", (_req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
-app.listen(PORT, () => console.log(`GameScope activo en el puerto ${PORT}`));
+// Autoprueba TEMPORAL: escribe en los logs si DNS, la key y el modelo responden (no imprime la key).
+async function selfTest() {
+  if (!GEMINI_API_KEY || process.env.GEMINI_SELFTEST === "0") return;
+  const t0 = Date.now();
+  const log = (...a) => console.log("[selftest]", ...a, `(+${Date.now() - t0}ms)`);
+  log("node", process.version, "modelo", GEMINI_MODEL);
+  try {
+    const addrs = await require("dns").promises.lookup("generativelanguage.googleapis.com", { all: true });
+    log("dns ok", JSON.stringify(addrs));
+  } catch (e) { log("dns error", e.code || e.message); }
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=100&key=${encodeURIComponent(GEMINI_API_KEY)}`, { signal: AbortSignal.timeout(20000) });
+    const d = await r.json().catch(() => ({}));
+    log("lista de modelos status", r.status, d.error?.message || "", (d.models || []).map(m => m.name.replace("models/", "")).filter(n => n.includes("flash")).join(","));
+  } catch (e) { log("lista de modelos error", e.name, e.cause?.code || "", e.cause?.message || e.message); }
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(45000),
+      body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Responde solo: ok" }] }], generationConfig: { maxOutputTokens: 200 } })
+    });
+    const d = await r.json().catch(() => ({}));
+    log("generateContent status", r.status, d.error?.message || "", "texto:", JSON.stringify(d?.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "").slice(0, 60));
+  } catch (e) { log("generateContent error", e.name, e.cause?.code || "", e.cause?.message || e.message); }
+}
+
+app.listen(PORT, () => {
+  console.log(`GameScope activo en el puerto ${PORT}`);
+  selfTest();
+});
