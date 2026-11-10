@@ -4,7 +4,9 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+// Lista de modelos separados por coma: se prueban en orden y se salta al siguiente si uno está saturado o no responde.
+const GEMINI_MODELS = (process.env.GEMINI_MODEL || "gemini-3.5-flash,gemini-3.7-flash,gemini-3.8-flash")
+  .split(",").map(s => s.trim()).filter(Boolean);
 
 app.use(express.json({ limit: "30kb" }));
 app.use(express.static(path.join(__dirname, "public")));
@@ -35,19 +37,40 @@ dependa de la versión, plataforma o configuración. No afirmes haber probado un
 Evita usar Markdown complejo (nada de tablas ni encabezados #); puedes usar listas cortas con guiones.
 `;
 
+let preferredModel = 0; // índice del último modelo que respondió bien
+
 async function askGemini(contents, systemInstruction = gameOnlyInstruction) {
   if (!GEMINI_API_KEY) {
     const error = new Error("Falta configurar GEMINI_API_KEY en las variables de entorno de Render.");
     error.status = 503;
     throw error;
   }
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+  let lastErr;
+  for (let i = 0; i < GEMINI_MODELS.length; i++) {
+    const idx = (preferredModel + i) % GEMINI_MODELS.length;
+    try {
+      const text = await callGemini(GEMINI_MODELS[idx], contents, systemInstruction);
+      preferredModel = idx;
+      return text;
+    } catch (e) {
+      lastErr = e;
+      console.error(`Gemini [${GEMINI_MODELS[idx]}] falló:`, e.message);
+      if (!e.retry) throw e; // errores que no se arreglan cambiando de modelo (key inválida, petición mala...)
+    }
+  }
+  const err = new Error("Gemini está saturado en este momento. Inténtalo de nuevo en unos segundos.");
+  err.status = 503;
+  throw err;
+}
+
+async function callGemini(model, contents, systemInstruction) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
   let response;
   try {
     response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      signal: AbortSignal.timeout(60000),
+      signal: AbortSignal.timeout(30000),
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemInstruction }] },
         contents,
@@ -58,15 +81,16 @@ async function askGemini(contents, systemInstruction = gameOnlyInstruction) {
   } catch (e) {
     // "fetch failed" no dice nada útil; la causa real viene en e.cause (DNS, timeout, TLS...).
     const cause = e.cause?.code || e.cause?.message || e.name || e.message;
-    console.error("Gemini fetch error:", cause, e.cause || e);
     const err = new Error(`No se pudo conectar con Gemini (${cause}).`);
     err.status = 502;
+    err.retry = true;
     throw err;
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const err = new Error(data?.error?.message || "Gemini no pudo procesar la solicitud.");
     err.status = response.status === 429 ? 429 : 502;
+    err.retry = [404, 429, 500, 503, 504].includes(response.status); // saturado o modelo no disponible → probar el siguiente
     throw err;
   }
   return data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("").trim()
@@ -159,29 +183,21 @@ app.get("/api/cover", async (req, res) => {
 app.get("/api/health", (_req, res) => res.json({ ok: true, app: "GameScope" }));
 app.get("*", (_req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
-// Autoprueba TEMPORAL: escribe en los logs si DNS, la key y el modelo responden (no imprime la key).
+// Autoprueba TEMPORAL: mide cuánto tarda cada modelo en responder (no imprime la key).
 async function selfTest() {
   if (!GEMINI_API_KEY || process.env.GEMINI_SELFTEST === "0") return;
-  const t0 = Date.now();
-  const log = (...a) => console.log("[selftest]", ...a, `(+${Date.now() - t0}ms)`);
-  log("node", process.version, "modelo", GEMINI_MODEL);
-  try {
-    const addrs = await require("dns").promises.lookup("generativelanguage.googleapis.com", { all: true });
-    log("dns ok", JSON.stringify(addrs));
-  } catch (e) { log("dns error", e.code || e.message); }
-  try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=100&key=${encodeURIComponent(GEMINI_API_KEY)}`, { signal: AbortSignal.timeout(20000) });
-    const d = await r.json().catch(() => ({}));
-    log("lista de modelos status", r.status, d.error?.message || "", (d.models || []).map(m => m.name.replace("models/", "")).filter(n => n.includes("flash")).join(","));
-  } catch (e) { log("lista de modelos error", e.name, e.cause?.code || "", e.cause?.message || e.message); }
-  try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(45000),
-      body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Responde solo: ok" }] }], generationConfig: { maxOutputTokens: 200 } })
-    });
-    const d = await r.json().catch(() => ({}));
-    log("generateContent status", r.status, d.error?.message || "", "texto:", JSON.stringify(d?.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "").slice(0, 60));
-  } catch (e) { log("generateContent error", e.name, e.cause?.code || "", e.cause?.message || e.message); }
+  console.log("[selftest] node", process.version, "modelos", GEMINI_MODELS.join(","));
+  for (const model of GEMINI_MODELS.concat(["gemini-3.5-flash-lite"]).filter((m, i, a) => a.indexOf(m) === i)) {
+    const t0 = Date.now();
+    try {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(25000),
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Responde solo: ok" }] }], generationConfig: { maxOutputTokens: 200 } })
+      });
+      const d = await r.json().catch(() => ({}));
+      console.log("[selftest]", model, "status", r.status, d.error?.message || "", JSON.stringify(d?.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "").slice(0, 40), `(${Date.now() - t0}ms)`);
+    } catch (e) { console.log("[selftest]", model, "error", e.name, `(${Date.now() - t0}ms)`); }
+  }
 }
 
 app.listen(PORT, () => {
