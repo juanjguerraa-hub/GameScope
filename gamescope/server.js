@@ -5,7 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 // Lista de modelos separados por coma: se prueban en orden y se salta al siguiente si uno está saturado o no responde.
-const GEMINI_MODELS = (process.env.GEMINI_MODEL || "gemini-3.5-flash,gemini-3.7-flash,gemini-3.8-flash")
+const GEMINI_MODELS = (process.env.GEMINI_MODEL || "gemini-3.5-flash,gemini-3.5-flash-lite,gemini-3.8-flash")
   .split(",").map(s => s.trim()).filter(Boolean);
 
 app.use(express.json({ limit: "30kb" }));
@@ -183,24 +183,4 @@ app.get("/api/cover", async (req, res) => {
 app.get("/api/health", (_req, res) => res.json({ ok: true, app: "GameScope" }));
 app.get("*", (_req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
-// Autoprueba TEMPORAL: mide cuánto tarda cada modelo en responder (no imprime la key).
-async function selfTest() {
-  if (!GEMINI_API_KEY || process.env.GEMINI_SELFTEST === "0") return;
-  console.log("[selftest] node", process.version, "modelos", GEMINI_MODELS.join(","));
-  for (const model of GEMINI_MODELS.concat(["gemini-3.5-flash-lite"]).filter((m, i, a) => a.indexOf(m) === i)) {
-    const t0 = Date.now();
-    try {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(25000),
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Responde solo: ok" }] }], generationConfig: { maxOutputTokens: 200 } })
-      });
-      const d = await r.json().catch(() => ({}));
-      console.log("[selftest]", model, "status", r.status, d.error?.message || "", JSON.stringify(d?.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "").slice(0, 40), `(${Date.now() - t0}ms)`);
-    } catch (e) { console.log("[selftest]", model, "error", e.name, `(${Date.now() - t0}ms)`); }
-  }
-}
-
-app.listen(PORT, () => {
-  console.log(`GameScope activo en el puerto ${PORT}`);
-  selfTest();
-});
+app.listen(PORT, () => console.log(`GameScope activo en el puerto ${PORT}`));
