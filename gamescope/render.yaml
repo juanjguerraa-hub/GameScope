@@ -3,6 +3,7 @@ services:
     name: gamescope
     runtime: node
     plan: free
+    rootDir: gamescope
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /api/health
