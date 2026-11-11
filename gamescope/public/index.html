@@ -44,6 +44,51 @@
       <div class="checker-layout">
         <form class="panel hardware-panel" id="analyze-form">
           <div class="panel-title"><div class="panel-icon">▣</div><div><h3>Tu equipo</h3><p>Ingresa los componentes de tu PC</p></div><span class="step-label">PASO 01</span></div>
+          <details class="spec-guide" id="spec-guide">
+            <summary><span class="guide-ico">?</span><span><b>¿No sabes qué componentes tiene tu PC?</b><small>Te guío paso a paso para encontrarlos</small></span><i class="chev">▾</i></summary>
+            <div class="guide-body">
+              <div class="guide-tabs">
+                <button type="button" class="guide-tab active" data-os="win">Windows</button>
+                <button type="button" class="guide-tab" data-os="mac">Mac</button>
+                <button type="button" class="guide-tab" data-os="linux">Linux</button>
+                <button type="button" class="guide-tab" data-os="laptop">Portátil</button>
+              </div>
+              <div class="guide-pane" data-os="win">
+                <ol>
+                  <li>Presiona <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Esc</kbd> para abrir el <b>Administrador de tareas</b> (si sale pequeño, clic en <i>Más detalles</i>).</li>
+                  <li>Entra a la pestaña <b>Rendimiento</b>.</li>
+                  <li><b>CPU:</b> el nombre exacto está arriba a la derecha, por ejemplo <code>Intel Core i5-12400F</code>.</li>
+                  <li><b>Memoria:</b> arriba a la derecha dice cuántos GB tienes, por ejemplo <code>16 GB</code>.</li>
+                  <li><b>GPU:</b> busca <i>GPU 0</i> o <i>GPU 1</i>. Si ves dos, tu tarjeta gráfica es la <b>NVIDIA GeForce</b> o <b>AMD Radeon RX</b>; la otra (Intel UHD o Radeon Graphics) es la integrada del procesador.</li>
+                </ol>
+                <p class="guide-alt"><b>Otra forma:</b> presiona <kbd>Win</kbd> + <kbd>R</kbd>, escribe <code>dxdiag</code> y Enter. En la pestaña <i>Sistema</i> ves procesador y memoria; en <i>Pantalla</i>, tu tarjeta gráfica.</p>
+              </div>
+              <div class="guide-pane hidden" data-os="mac">
+                <ol>
+                  <li>Abre el menú Apple (arriba a la izquierda) y elige <b>Acerca de este Mac</b>.</li>
+                  <li>Ahí aparecen el <b>chip</b> (por ejemplo <code>Apple M2 Pro</code>) y la <b>memoria</b> (por ejemplo <code>16 GB</code>). En los Mac con chip Apple la gráfica va dentro del chip, así que escribe el nombre completo del chip en procesador y en gráfica.</li>
+                </ol>
+                <p class="guide-alt">Ojo: muchos juegos de PC solo existen para Windows, así que en Mac el análisis puede ser menos preciso.</p>
+              </div>
+              <div class="guide-pane hidden" data-os="linux">
+                <ol>
+                  <li>Abre una terminal.</li>
+                  <li><b>CPU:</b> <code>lscpu | grep "Model name"</code></li>
+                  <li><b>RAM:</b> <code>free -h</code> (mira la columna <i>total</i>)</li>
+                  <li><b>GPU:</b> <code>lspci | grep -iE "vga|3d"</code></li>
+                </ol>
+              </div>
+              <div class="guide-pane hidden" data-os="laptop">
+                <ol>
+                  <li>Los pasos de Windows también sirven en portátiles.</li>
+                  <li>La gráfica de un portátil se llama algo como <code>RTX 3050 Laptop GPU</code> o <code>RX 6600M</code>. Escríbela completa: rinde distinto que la versión de escritorio.</li>
+                  <li>Si solo ves <i>Intel UHD</i>, <i>Iris Xe</i> o <i>AMD Radeon Graphics</i>, tu equipo usa gráfica <b>integrada</b>: escríbelo así y agrega el modelo del procesador.</li>
+                  <li>¿No encuentras el procesador? Busca el modelo exacto del portátil (viene en una etiqueta debajo o en Configuración → Sistema → Acerca de) en la web del fabricante.</li>
+                </ol>
+              </div>
+              <div class="guide-tip"><b class="tip-ico">✦</b><span>Las letras del modelo importan: <code>i5-12400F</code> no es <code>i5-12400K</code>, y <code>RTX 3060</code> no es <code>RTX 3060 Ti</code>. Si no estás seguro de algo, escribe lo que sepas y la IA te dirá qué falta. ¿Dudas? <button type="button" class="link-btn" data-jump="chat">Pregúntale al Game Chat</button>.</span></div>
+            </div>
+          </details>
           <label>PROCESADOR (CPU)<input name="cpu" required placeholder="Ej. Intel Core i5-12400F"></label>
           <label>TARJETA GRÁFICA (GPU)<input name="gpu" required placeholder="Ej. NVIDIA RTX 3060 12GB"></label>
           <div class="field-row"><label>MEMORIA RAM (GB)<input name="ram" type="number" min="1" max="512" required placeholder="16"></label><label>RESOLUCIÓN<select name="resolution"><option>1920×1080 (Full HD)</option><option>2560×1440 (QHD)</option><option>3840×2160 (4K)</option><option>No lo sé</option></select></label></div>
@@ -75,6 +120,7 @@
         <div><div class="eyebrow">DESCUBRE TU PRÓXIMA AVENTURA</div><h2>Juegos destacados</h2></div>
         <span class="catalog-note">SELECCIONA UNO PARA ANALIZARLO ↗</span>
       </div>
+      <div class="catalog-tools"><input id="game-search" class="game-search" type="search" placeholder="Buscar juego..." autocomplete="off"><span id="game-count"></span></div>
       <div class="cat-tabs" id="cat-tabs">
         <button class="cat-tab active" data-cat="all">Todos</button>
         <button class="cat-tab" data-cat="popular">Populares</button>
@@ -91,7 +137,7 @@
         <aside class="chat-aside"><div class="bot-avatar">G<span>✦</span></div><h3>GameScope AI</h3><div class="online"><i></i> En línea</div><p>Tu compañero para explorar, aprender y dominar tus videojuegos favoritos.</p><div class="aside-rule"></div><small>ESPECIALIDADES</small><div class="specialty">🗺️ Indie</div><div class="specialty">🦋 Metroidvania</div><div class="specialty">⚔️ Juegos de pelea</div><div class="specialty">🔥 Los más populares</div><div class="aside-tip">✦ <span>Si no es de videojuegos, no puedo responderlo.</span></div></aside>
         <div class="chat-main"><div class="chat-toolbar"><div><b>Conversación</b><small>Pregúntame sobre tu próximo juego</small></div><button id="clear-chat" class="clear-btn">＋ Nuevo chat</button></div>
           <div class="messages" id="messages"><div class="message bot"><div class="message-avatar">G</div><div><div class="bubble">¡Hey, gamer! 👾 Soy GameScope. Puedo ayudarte con personajes, historias, combos, estrategias, requisitos y recomendaciones de indies, metroidvanias, juegos de pelea y los títulos más populares. ¿Qué tienes en mente?</div><small>GAMESCOPE AI</small></div></div></div>
-          <div class="suggestions"><button>¿Qué metroidvania me recomiendas?</button><button>¿Cuál es el mejor Mortal Kombat?</button><button>Consejos para mejorar mis FPS en Valorant</button></div>
+          <div class="suggestions"><button>¿Qué metroidvania me recomiendas?</button><button>¿Cuál es el mejor Mortal Kombat?</button><button>Consejos para mejorar mis FPS en Valorant</button><button>¿Cómo veo los componentes de mi PC?</button></div>
           <form id="chat-form" class="chat-input"><textarea id="chat-input" rows="1" placeholder="Escribe tu pregunta sobre videojuegos..." required></textarea><button type="submit" id="send-btn" aria-label="Enviar">➤</button></form><div class="chat-disclaimer">GameScope puede equivocarse. Verifica datos técnicos importantes.</div>
         </div>
       </div>

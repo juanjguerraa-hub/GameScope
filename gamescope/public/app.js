@@ -1,29 +1,10 @@
 /* ---------- Catálogo ---------- */
 const STEAM = "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/";
+const norm = s => String(s || "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "");
 const CATS = { popular: "Popular", indie: "Indie", metroidvania: "Metroidvania", lucha: "Lucha" };
 
-// appid = ID de Steam (para traer la carátula). Los juegos sin appid usan una carátula de color generada.
-const games = [
-  { name: "Minecraft", cat: "popular", genre: "Sandbox · Supervivencia", desc: "Construye, explora y sobrevive en mundos infinitos donde tu imaginación pone el límite.", hue: 200, cover: "https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/key-art/Vanilla-Key-Art.jpg" },
-  { name: "Fortnite", cat: "popular", genre: "Battle Royale", desc: "Aterriza, construye y sobrevive en el battle royale más famoso del mundo.", hue: 265 },
-  { name: "Valorant", cat: "popular", genre: "Shooter táctico", desc: "Shooter 5v5 con agentes y habilidades donde cada ronda cuenta.", hue: 230 },
-  { name: "Halo Infinite", cat: "popular", genre: "Shooter · Sci-fi", appid: 1240440, desc: "El Jefe Maestro regresa con campaña abierta y multijugador gratuito." },
-  { name: "Counter-Strike 2", cat: "popular", genre: "Shooter táctico", appid: 730, desc: "El shooter competitivo por excelencia, renovado con un nuevo motor." },
-  { name: "Apex Legends", cat: "popular", genre: "Battle Royale · Héroes", appid: 1172470, desc: "Escuadras, leyendas con habilidades únicas y combates rapidísimos." },
-  { name: "Hollow Knight", cat: "metroidvania", genre: "Metroidvania", appid: 367520, desc: "Explora un reino subterráneo lleno de secretos, criaturas y combates exigentes." },
-  { name: "Dead Cells", cat: "metroidvania", genre: "Roguelite · Metroidvania", appid: 588650, desc: "Combate rápido, exploración y niveles cambiantes en una aventura desafiante." },
-  { name: "Ori and the Will of the Wisps", cat: "metroidvania", genre: "Metroidvania", appid: 1057090, desc: "Una aventura preciosa, fluida y emotiva por un bosque lleno de vida." },
-  { name: "Blasphemous", cat: "metroidvania", genre: "Metroidvania · Oscuro", appid: 774361, desc: "Acción gótica y brutal en un mundo de pixel art inspirado en la España religiosa." },
-  { name: "Cuphead", cat: "indie", genre: "Run & gun · Indie", appid: 268910, desc: "Acción dibujada a mano con jefes desafiantes y estética de dibujos clásicos." },
-  { name: "Hades", cat: "indie", genre: "Roguelike · Indie", appid: 1145360, desc: "Escapa del inframundo en este intenso roguelike inspirado en la mitología griega." },
-  { name: "Celeste", cat: "indie", genre: "Plataformas · Indie", appid: 504230, desc: "Acompaña a Madeline en una escalada exigente y emotiva por la montaña Celeste." },
-  { name: "Stardew Valley", cat: "indie", genre: "Granja · Indie", appid: 413150, desc: "Hereda una granja, cultiva, explora cuevas y haz amigos en el pueblo." },
-  { name: "Terraria", cat: "indie", genre: "Sandbox · Aventura", appid: 105600, desc: "Cava, construye y pelea contra jefes en un mundo 2D lleno de sorpresas." },
-  { name: "Mortal Kombat 1", cat: "lucha", genre: "Lucha", appid: 1971870, desc: "Combates brutales que reinician el universo Mortal Kombat con un nuevo comienzo." },
-  { name: "Street Fighter 6", cat: "lucha", genre: "Lucha", appid: 1364780, desc: "La legendaria saga evoluciona con nuevos modos, personajes y escena competitiva." },
-  { name: "Tekken 8", cat: "lucha", genre: "Lucha 3D", appid: 1778820, desc: "Puños, patadas y drama familiar en el torneo del Rey del Puño de Hierro." },
-  { name: "Guilty Gear -Strive-", cat: "lucha", genre: "Lucha anime", appid: 1384160, desc: "Peleas ultra rápidas con un apartado visual espectacular." }
-];
+// El catálogo se carga desde /api/games (el servidor verifica los IDs de Steam y busca otras carátulas).
+let games = [];
 
 // Los tonos de respaldo se mantienen en la gama azul/cian/índigo para respetar el diseño.
 function hueFromName(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return 195 + (h % 75); }
@@ -62,27 +43,44 @@ function coverNode(game, kind = "portrait") {
 }
 
 function findGame(name) {
-  const n = String(name || "").trim().toLowerCase();
+  const n = norm(name);
   if (!n) return null;
-  return games.find(g => g.name.toLowerCase() === n)
-    || games.find(g => g.name.toLowerCase().includes(n) || (n.length > 3 && n.includes(g.name.toLowerCase()))) || null;
+  return games.find(g => norm(g.name) === n)
+    || games.find(g => n.length > 2 && norm(g.name).includes(n))
+    || games.filter(g => norm(g.name).length > 3 && n.includes(norm(g.name))).sort((a, b) => b.name.length - a.name.length)[0]
+    || null;
 }
 
 /* ---------- Hero ---------- */
 const heroCovers = document.querySelector("#hero-covers");
-["Mortal Kombat 1", "Hollow Knight", "Hades"].forEach((name, i) => {
-  const g = games.find(x => x.name === name);
-  const card = document.createElement("div");
-  card.className = `hero-cover hc-${i + 1}`;
-  card.append(coverNode(g));
-  heroCovers.append(card);
-});
+function renderHero() {
+  heroCovers.innerHTML = "";
+  ["Mortal Kombat 1", "Hollow Knight", "Hades"].forEach((name, i) => {
+    const g = games.find(x => x.name === name);
+    if (!g) return;
+    const card = document.createElement("div");
+    card.className = `hero-cover hc-${i + 1}`;
+    card.append(coverNode(g));
+    heroCovers.append(card);
+  });
+}
 
 /* ---------- Catálogo ---------- */
 const grid = document.querySelector("#game-grid");
-function renderGrid(cat = "all") {
+let currentCat = "all", currentQuery = "";
+function renderGrid() {
   grid.innerHTML = "";
-  games.filter(g => cat === "all" || g.cat === cat).forEach(g => {
+  const q = norm(currentQuery);
+  const list = games.filter(g => (currentCat === "all" || g.cat === currentCat) && (!q || norm(g.name).includes(q)));
+  document.querySelector("#game-count").textContent = games.length ? `${list.length} DE ${games.length} JUEGOS` : "";
+  if (!list.length) {
+    const p = document.createElement("p");
+    p.className = "grid-empty";
+    p.textContent = games.length ? "No está en el catálogo, pero puedes escribir su nombre en el formulario y analizarlo igual." : "Cargando catálogo...";
+    grid.append(p);
+    return;
+  }
+  list.forEach(g => {
     const card = document.createElement("article");
     card.className = "game-card";
     const cover = document.createElement("div");
@@ -110,10 +108,37 @@ function renderGrid(cat = "all") {
     grid.append(card);
   });
 }
-renderGrid();
 document.querySelectorAll(".cat-tab").forEach(b => b.addEventListener("click", () => {
   document.querySelectorAll(".cat-tab").forEach(x => x.classList.toggle("active", x === b));
-  renderGrid(b.dataset.cat);
+  currentCat = b.dataset.cat;
+  renderGrid();
+}));
+document.querySelector("#game-search").addEventListener("input", e => { currentQuery = e.target.value; renderGrid(); });
+
+let catalogSig = "";
+async function loadCatalog(attempt = 0) {
+  try {
+    const r = await fetch("/api/games");
+    const d = await r.json();
+    if (!Array.isArray(d.games) || !d.games.length) throw new Error("catálogo vacío");
+    const sig = JSON.stringify(d.games);
+    if (sig !== catalogSig) { catalogSig = sig; games = d.games; renderHero(); renderGrid(); }
+    // El servidor sigue verificando carátulas unos segundos después de arrancar: volvemos a preguntar.
+    if (!d.resolved && attempt < 5) setTimeout(() => loadCatalog(attempt + 1), 6000);
+  } catch {
+    if (!games.length) {
+      try { games = await (await fetch("/games.json")).json(); renderHero(); } catch {}
+      renderGrid();
+    }
+  }
+}
+renderGrid();
+loadCatalog();
+
+/* ---------- Guía de componentes ---------- */
+document.querySelectorAll(".guide-tab").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".guide-tab").forEach(x => x.classList.toggle("active", x === b));
+  document.querySelectorAll(".guide-pane").forEach(pane => pane.classList.toggle("hidden", pane.dataset.os !== b.dataset.os));
 }));
 
 /* ---------- Navegación ---------- */
