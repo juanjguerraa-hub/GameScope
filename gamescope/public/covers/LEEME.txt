@@ -1,0 +1,11 @@
+CARATULAS PROPIAS
+=================
+Si un juego no tiene caratula (o quieres cambiarla), pon aqui una imagen con el nombre del juego en minusculas,
+con guiones en vez de espacios y simbolos. Formatos: .jpg, .png o .webp. Mejor vertical (relacion 2:3, ej. 600x900).
+
+  minecraft.jpg
+  fortnite.jpg
+  valorant.png
+  hollow-knight-silksong.jpg
+
+Estas imagenes tienen prioridad sobre las de Steam y Wikipedia. Al subir el archivo a GitHub, Render redespliega solo.

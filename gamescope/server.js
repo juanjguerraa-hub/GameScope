@@ -226,14 +226,24 @@ async function wikiImage(title) {
   // 2) respaldo: buscar la mejor página de videojuego que tenga imagen
   try {
     const d = await getJson(`${WIKI}&generator=search&gsrsearch=${encodeURIComponent(title + " video game")}&gsrlimit=5`);
-    const page = (d?.query?.pages || []).filter(p => p.thumbnail?.source).sort((a, b) => (a.index || 99) - (b.index || 99))[0];
+    const page = (d?.query?.pages || []).filter(p => p.thumbnail?.source && sameGame(p.title, title)).sort((a, b) => (a.index || 99) - (b.index || 99))[0];
     if (page) { console.log(`[catalogo] ${title}: imagen de la página "${page.title}"`); return page.thumbnail.source; }
   } catch (e) { console.log(`[catalogo] Wikipedia búsqueda (${title}) falló: ${e.message}`); }
   return null;
 }
 
+function localCover(name) {
+  const slug = String(name).toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  for (const ext of ["jpg", "jpeg", "png", "webp"]) {
+    if (fs.existsSync(path.join(__dirname, "public", "covers", `${slug}.${ext}`))) return `/covers/${slug}.${ext}`;
+  }
+  return null;
+}
+
 async function resolveGame(g) {
   const out = { ...g };
+  const mine = localCover(g.name);
+  if (mine) { out.cover = mine; delete out.appid; return out; }
   if (g.appid) {
     let ok = false, netError = false;
     try { const n = await steamName(g.appid); ok = n !== null && sameGame(n, g.name); } catch { netError = true; }
