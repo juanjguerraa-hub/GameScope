@@ -215,9 +215,21 @@ async function steamSearch(name) {
   const d = await getJson(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(name)}&l=english&cc=us`);
   return (d?.items || []).filter(i => i.type === "app").find(i => sameGame(i.name, name)) || null;
 }
+const WIKI = "https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&piprop=thumbnail&pithumbsize=600&format=json&formatversion=2";
 async function wikiImage(title) {
-  const d = await getJson(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&piprop=thumbnail&pithumbsize=600&redirects=1&format=json&formatversion=2`);
-  return d?.query?.pages?.[0]?.thumbnail?.source || null;
+  // 1) la página con ese título exacto
+  try {
+    const d = await getJson(`${WIKI}&titles=${encodeURIComponent(title)}&redirects=1`);
+    const img = d?.query?.pages?.[0]?.thumbnail?.source;
+    if (img) return img;
+  } catch (e) { console.log(`[catalogo] Wikipedia (${title}) falló: ${e.message}`); }
+  // 2) respaldo: buscar la mejor página de videojuego que tenga imagen
+  try {
+    const d = await getJson(`${WIKI}&generator=search&gsrsearch=${encodeURIComponent(title + " video game")}&gsrlimit=5`);
+    const page = (d?.query?.pages || []).filter(p => p.thumbnail?.source).sort((a, b) => (a.index || 99) - (b.index || 99))[0];
+    if (page) { console.log(`[catalogo] ${title}: imagen de la página "${page.title}"`); return page.thumbnail.source; }
+  } catch (e) { console.log(`[catalogo] Wikipedia búsqueda (${title}) falló: ${e.message}`); }
+  return null;
 }
 
 async function resolveGame(g) {
